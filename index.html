@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>말하는 학교 친구 - 어린이 AAC 웹앱</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Gowun Dodum', 'Gaegu', sans-serif;
+      font-weight: 400;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      letter-spacing: 0.01em;
+    }
+    .font-heading {
+      font-family: 'Gowun Dodum', 'Gaegu', sans-serif;
+      font-weight: 600;
+    }
+    /* Kid friendly active bounce effect */
+    .card-btn {
+      transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .card-btn:active {
+      transform: scale(0.92);
+    }
+    /* Pulse for talking state */
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(99, 102, 241, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+    }
+    .speaking-active {
+      animation: pulse-ring 1.5s infinite;
+    }
+    /* High Contrast overrides */
+    .high-contrast {
+      background-color: #000000 !important;
+      color: #FFFF00 !important;
+    }
+    .high-contrast .bg-card-hc {
+      background-color: #1a1a1a !important;
+      border: 3px solid #FFFF00 !important;
+      color: #FFFFFF !important;
+    }
+    .high-contrast button {
+      border: 2px solid #FFFF00 !important;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col transition-colors duration-300">
+
+  <!-- Top Navigation Bar -->
+  <header class="bg-indigo-600 text-white shadow-md sticky top-0 z-30">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-amber-400 text-indigo-900 w-10 h-10 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-inner">
+          🗣️
+        </div>
+        <div>
+          <h1 class="text-xl md:text-2xl font-bold font-heading tracking-wide">말하는 학교 친구</h1>
+          <p class="text-xs text-indigo-200 hidden sm:block">어린이를 위한 쉬운 소리 상자 (AAC)</p>
+        </div>
+      </div>
+
+      <!-- Quick Settings & Controls -->
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <!-- Voice Engine Switch -->
+        <button id="tts-toggle-btn" onclick="toggleTTSEngine()" class="bg-indigo-700 hover:bg-indigo-800 text-xs sm:text-sm px-3 py-2 rounded-xl flex items-center space-x-1.5 transition font-medium border border-indigo-500">
+          <i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i>
+          <span id="tts-engine-label">기본 음성</span>
+        </button>
+
+        <!-- High Contrast Toggle -->
+        <button onclick="toggleHighContrast()" title="고대비 모드" class="bg-indigo-700 hover:bg-indigo-800 p-2 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm flex items-center space-x-1 transition border border-indigo-500">
+          <i class="fa-solid fa-circle-half-stroke text-yellow-300 text-base"></i>
+          <span class="hidden md:inline">대비모드</span>
+        </button>
+
+        <!-- Help SOS Button -->
+        <button onclick="speakText('선생님, 도움이 필요해요!', true)" class="bg-rose-500 hover:bg-rose-600 active:scale-95 text-white font-bold px-3 py-2 rounded-xl shadow flex items-center space-x-1.5 animate-bounce">
+          <i class="fa-solid fa-bell text-lg"></i>
+          <span class="text-sm">도움!</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-6xl mx-auto w-full px-3 py-4 flex-1 flex flex-col gap-4">
+
+    <!-- Sentence Builder Bar (문장 만들기) -->
+    <section class="bg-white rounded-3xl p-3 sm:p-4 shadow-sm border-2 border-indigo-100 flex flex-col sm:flex-row items-center gap-3">
+      <div class="flex items-center justify-between w-full sm:w-auto gap-2">
+        <span class="text-xs font-bold text-indigo-500 uppercase tracking-wider bg-indigo-50 px-2.5 py-1 rounded-lg">
+          <i class="fa-solid fa-comments mr-1"></i>문장 만들기
+        </span>
+        <div class="flex items-center gap-1 sm:hidden">
+          <button onclick="clearSentence()" class="text-slate-400 hover:text-rose-500 p-2 text-sm">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Selected Words Chips Area -->
+      <div id="sentence-container" class="flex-1 w-full min-h-[52px] bg-slate-50 border border-slate-200 rounded-2xl p-2 flex items-center gap-2 overflow-x-auto scrollbar-thin">
+        <span id="placeholder-text" class="text-slate-400 text-sm pl-2">아래 카드를 터치해서 말을 완성해보세요!</span>
+      </div>
+
+      <!-- Action Buttons for Sentence -->
+      <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+        <button onclick="removeLastWord()" class="hidden sm:flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 w-11 h-11 rounded-2xl transition" title="마지막 단어 지우기">
+          <i class="fa-solid fa-delete-left text-lg"></i>
+        </button>
+        <button onclick="clearSentence()" class="hidden sm:flex items-center justify-center bg-slate-100 hover:bg-rose-100 text-slate-700 hover:text-rose-600 w-11 h-11 rounded-2xl transition" title="전체 지우기">
+          <i class="fa-solid fa-rotate-right text-lg"></i>
+        </button>
+        <button id="speak-sentence-btn" onclick="speakCurrentSentence()" class="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold px-5 h-11 rounded-2xl shadow-md flex items-center justify-center space-x-2 transition">
+          <i class="fa-solid fa-volume-high text-lg"></i>
+          <span>모두 말하기</span>
+        </button>
+        <button onclick="openBigDisplayModal()" class="bg-amber-400 hover:bg-amber-500 active:scale-95 text-slate-900 font-bold px-3.5 h-11 rounded-2xl shadow flex items-center justify-center space-x-1 transition" title="선생님께 보여주기">
+          <i class="fa-solid fa-expand text-lg"></i>
+          <span class="hidden md:inline text-xs">보여주기</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Category Tabs -->
+    <nav class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+      <button onclick="switchCategory('school')" id="tab-school" class="cat-tab bg-indigo-600 text-white font-bold px-4 py-2.5 rounded-2xl shadow-sm text-sm sm:text-base flex items-center space-x-2 whitespace-nowrap transition">
+        <span>🏫</span> <span>학교 생활</span>
+      </button>
+      <button onclick="switchCategory('food')" id="tab-food" class="cat-tab bg-white hover:bg-indigo-50 text-slate-700 font-bold px-4 py-2.5 rounded-2xl text-sm sm:text-base flex items-center space-x-2 whitespace-nowrap transition border border-slate-200">
+        <span>🍱</span> <span>급식과 간식</span>
+      </button>
+      <button onclick="switchCategory('play')" id="tab-play" class="cat-tab bg-white hover:bg-indigo-50 text-slate-700 font-bold px-4 py-2.5 rounded-2xl text-sm sm:text-base flex items-center space-x-2 whitespace-nowrap transition border border-slate-200">
+        <span>🎨</span> <span>놀이와 활동</span>
+      </button>
+      <button onclick="switchCategory('feeling')" id="tab-feeling" class="cat-tab bg-white hover:bg-indigo-50 text-slate-700 font-bold px-4 py-2.5 rounded-2xl text-sm sm:text-base flex items-center space-x-2 whitespace-nowrap transition border border-slate-200">
+        <span>❤️</span> <span>기분과 상태</span>
+      </button>
+      <button onclick="switchCategory('custom')" id="tab-custom" class="cat-tab bg-white hover:bg-indigo-50 text-slate-700 font-bold px-4 py-2.5 rounded-2xl text-sm sm:text-base flex items-center space-x-2 whitespace-nowrap transition border border-slate-200">
+        <span>⭐</span> <span>나만의 카드</span>
+      </button>
+    </nav>
+
+    <!-- Mode Selector Bar (Instant Speech vs Add to Sentence) -->
+    <div class="flex items-center justify-between px-2 text-xs sm:text-sm text-slate-500">
+      <div class="flex items-center space-x-4">
+        <label class="inline-flex items-center cursor-pointer">
+          <input type="radio" name="touchMode" value="instant" checked onchange="setTouchMode(this.value)" class="w-4 h-4 text-indigo-600 form-radio">
+          <span class="ml-1.5 font-medium text-slate-700">터치 시 즉시 소리 내기</span>
+        </label>
+        <label class="inline-flex items-center cursor-pointer">
+          <input type="radio" name="touchMode" value="builder" onchange="setTouchMode(this.value)" class="w-4 h-4 text-indigo-600 form-radio">
+          <span class="ml-1.5 font-medium text-slate-700">문장 칸에 담기</span>
+        </label>
+      </div>
+
+      <button onclick="openCustomCardModal()" class="text-indigo-600 hover:text-indigo-800 font-bold flex items-center space-x-1">
+        <i class="fa-solid fa-circle-plus text-base"></i>
+        <span>새 카드 추가</span>
+      </button>
+    </div>
+
+    <!-- Cards Grid -->
+    <section id="cards-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 flex-1">
+      <!-- Dynamic cards rendered by JS -->
+    </section>
+  </main>
+
+  <!-- Big Display Modal (선생님께 보여주기) -->
+  <div id="big-display-modal" class="fixed inset-0 bg-slate-900/90 z-50 hidden flex-col items-center justify-center p-6 text-center backdrop-blur-md">
+    <button onclick="closeBigDisplayModal()" class="absolute top-6 right-6 text-white/80 hover:text-white text-3xl p-2">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    
+    <div class="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl border-4 border-indigo-400 flex flex-col items-center gap-6 animate-scale-up">
+      <div id="modal-emoji" class="text-8xl sm:text-9xl animate-bounce">
+        📢
+      </div>
+      <div id="modal-text" class="text-3xl sm:text-5xl font-extrabold text-slate-800 font-heading leading-tight">
+        선생님, 말을 완성해주세요!
+      </div>
+      <div class="flex items-center gap-4 mt-4 w-full">
+        <button onclick="speakCurrentSentence()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xl py-4 rounded-2xl shadow-lg flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-volume-high text-2xl"></i>
+          <span>다시 소리 내기</span>
+        </button>
+        <button onclick="closeBigDisplayModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xl px-8 py-4 rounded-2xl">
+          닫기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Card Modal -->
+  <div id="custom-card-modal" class="fixed inset-0 bg-slate-900/50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-xl flex flex-col gap-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="text-lg font-bold font-heading text-slate-800">✨ 나만의 소리 카드 만들기</h3>
+        <button onclick="closeCustomCardModal()" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">카드에 쓸 말 (소리 날 문장)</label>
+        <input type="text" id="custom-card-text" placeholder="예: 체육관에 가고 싶어요" class="w-full border border-slate-300 rounded-xl p-3 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">이모지 선택</label>
+        <div class="grid grid-cols-6 gap-2 text-2xl text-center bg-slate-50 p-2 rounded-xl border border-slate-200">
+          <button onclick="selectEmoji('⚽')" class="hover:scale-125 transition p-1">⚽</button>
+          <button onclick="selectEmoji('🎨')" class="hover:scale-125 transition p-1">🎨</button>
+          <button onclick="selectEmoji('🎵')" class="hover:scale-125 transition p-1">🎵</button>
+          <button onclick="selectEmoji('📚')" class="hover:scale-125 transition p-1">📚</button>
+          <button onclick="selectEmoji('🏫')" class="hover:scale-125 transition p-1">🏫</button>
+          <button onclick="selectEmoji('💊')" class="hover:scale-125 transition p-1">💊</button>
+          <button onclick="selectEmoji('🚌')" class="hover:scale-125 transition p-1">🚌</button>
+          <button onclick="selectEmoji('🧸')" class="hover:scale-125 transition p-1">🧸</button>
+          <button onclick="selectEmoji('🍎')" class="hover:scale-125 transition p-1">🍎</button>
+          <button onclick="selectEmoji('🙋')" class="hover:scale-125 transition p-1">🙋</button>
+          <button onclick="selectEmoji('⭐')" class="hover:scale-125 transition p-1">⭐</button>
+          <button onclick="selectEmoji('❤️')" class="hover:scale-125 transition p-1">❤️</button>
+        </div>
+        <input type="text" id="custom-card-emoji" value="⭐" class="mt-2 w-full border border-slate-300 rounded-xl p-2 text-center text-xl">
+      </div>
+
+      <div class="flex items-center gap-2 pt-2">
+        <button onclick="closeCustomCardModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl">취소</button>
+        <button onclick="saveCustomCard()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow">저장하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio Loading Toast -->
+  <div id="toast-loading" class="fixed bottom-6 right-6 bg-slate-800 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center space-x-3 transition-opacity duration-300 opacity-0 pointer-events-none z-50">
+    <div class="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
+    <span class="text-sm font-medium">AI 고품질 목소리 생성 중...</span>
+  </div>
+
+  <script>
+    // --- APP STATE & INITIAL CARDS ---
+    let currentCategory = 'school';
+    let touchMode = 'instant'; // 'instant' or 'builder'
+    let sentenceWords = [];
+    let isGeminiTTS = false;
+    let selectedEmojiForCustom = '⭐';
+
+    // Preset cards simplified & optimized for younger children (Bigger icons, cleaner text)
+    const cardDatabase = {
+      school: [
+        { id: 's1', emoji: '🙋‍♂️', label: '질문 있어요', text: '선생님, 질문 있어요!', bg: 'bg-indigo-50 border-indigo-200' },
+        { id: 's2', emoji: '🚽', label: '화장실 가요', text: '화장실 가고 싶어요.', bg: 'bg-blue-50 border-blue-200' },
+        { id: 's3', emoji: '🥛', label: '물 마실래요', text: '물 마시고 싶어요.', bg: 'bg-sky-50 border-sky-200' },
+        { id: 's4', emoji: '✋', label: '저요 저요!', text: '저요! 제가 해볼래요!', bg: 'bg-amber-50 border-amber-200' },
+        { id: 's5', emoji: '🆘', label: '도와주세요!', text: '선생님, 도와주세요!', bg: 'bg-rose-50 border-rose-200 text-rose-700' },
+        { id: 's6', emoji: '✨', label: '다 했어요', text: '다 끝냈어요!', bg: 'bg-emerald-50 border-emerald-200' },
+        { id: 's7', emoji: '✏️', label: '연필 필요해요', text: '연필이 필요해요.', bg: 'bg-purple-50 border-purple-200' },
+        { id: 's8', emoji: '🧸', label: '쉬고 싶어요', text: '잠시 쉬고 싶어요.', bg: 'bg-slate-100 border-slate-200' },
+      ],
+      food: [
+        { id: 'f1', emoji: '🍱', label: '밥 먹을래요', text: '맛있게 밥 먹을래요.', bg: 'bg-orange-50 border-orange-200' },
+        { id: 'f2', emoji: '🥛', label: '우유 주세요', text: '우유 주세요!', bg: 'bg-blue-50 border-blue-200' },
+        { id: 'f3', emoji: '😋', label: '더 주세요', text: '더 주세요!', bg: 'bg-emerald-50 border-emerald-200' },
+        { id: 'f4', emoji: '🙅‍♂️', label: '안 먹을래요', text: '이거는 안 먹을래요.', bg: 'bg-rose-50 border-rose-200' },
+        { id: 'f5', emoji: '🥐', label: '배고파요', text: '배가 고파요!', bg: 'bg-amber-50 border-amber-200' },
+        { id: 'f6', emoji: '🥰', label: '배불러요', text: '배가 불러요!', bg: 'bg-teal-50 border-teal-200' },
+      ],
+      play: [
+        { id: 'p1', emoji: '🤝', label: '같이 놀자!', text: '나랑 같이 놀자!', bg: 'bg-amber-50 border-amber-200' },
+        { id: 'p2', emoji: '⚽', label: '밖에서 놀래', text: '운동장에서 놀래!', bg: 'bg-emerald-50 border-emerald-200' },
+        { id: 'p3', emoji: '🎨', label: '그림 그릴래', text: '그림 그리고 싶어요.', bg: 'bg-pink-50 border-pink-200' },
+        { id: 'p4', emoji: '📖', label: '책 볼래요', text: '재미있는 책 볼래요.', bg: 'bg-blue-50 border-blue-200' },
+        { id: 'p5', emoji: '⏳', label: '내 차례예요', text: '이제 내 차례예요!', bg: 'bg-purple-50 border-purple-200' },
+        { id: 'p6', emoji: '🧩', label: '장난감 놀이', text: '장난감 갖고 놀래!', bg: 'bg-cyan-50 border-cyan-200' },
+      ],
+      feeling: [
+        { id: 'e1', emoji: '😄', label: '좋아요!', text: '기분이 정말 좋아요!', bg: 'bg-yellow-50 border-yellow-200' },
+        { id: 'e2', emoji: '🤒', label: '아파요', text: '몸이 아파요.', bg: 'bg-rose-50 border-rose-200 text-rose-700' },
+        { id: 'e3', emoji: '📢', label: '시끄러워요', text: '소리가 너무 시끄러워요.', bg: 'bg-orange-50 border-orange-200' },
+        { id: 'e4', emoji: '😢', label: '슬퍼요', text: '마음이 슬퍼요.', bg: 'bg-blue-50 border-blue-200' },
+        { id: 'e5', emoji: '😨', label: '무서워요', text: '조금 무서워요.', bg: 'bg-indigo-50 border-indigo-200' },
+        { id: 'e6', emoji: '😴', label: '졸려요', text: '졸리고 피곤해요.', bg: 'bg-purple-50 border-purple-200' },
+      ],
+      custom: []
+    };
+
+    // Load Custom Cards from localStorage
+    function loadCustomCards() {
+      const saved = localStorage.getItem('aac_custom_cards');
+      if (saved) {
+        try {
+          cardDatabase.custom = JSON.parse(saved);
+        } catch (e) {
+          cardDatabase.custom = [];
+        }
+      }
+    }
+
+    // --- RENDER FUNCTION ---
+    function renderCards() {
+      const grid = document.getElementById('cards-grid');
+      grid.innerHTML = '';
+
+      const cards = cardDatabase[currentCategory] || [];
+
+      if (cards.length === 0 && currentCategory === 'custom') {
+        grid.innerHTML = `
+          <div class="col-span-full py-12 text-center text-slate-400 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+            <p class="text-4xl mb-2">⭐</p>
+            <p class="font-bold text-slate-600">나만의 소리 카드가 없어요</p>
+            <p class="text-xs mt-1">상단의 [+ 새 카드 추가] 버튼을 눌러 자주 쓰는 말을 만들어보세요!</p>
+          </div>
+        `;
+        return;
+      }
+
+      cards.forEach(card => {
+        const cardEl = document.createElement('button');
+        cardEl.onclick = () => handleCardClick(card);
+        cardEl.className = `card-btn bg-card-hc ${card.bg || 'bg-white border-slate-200'} border-2 rounded-3xl p-3 sm:p-4 shadow-sm hover:shadow-md flex flex-col items-center justify-center text-center gap-2 group cursor-pointer h-36 sm:h-44`;
+        
+        cardEl.innerHTML = `
+          <span class="text-5xl sm:text-6xl group-hover:scale-110 transition transform drop-shadow-sm">${card.emoji}</span>
+          <span class="font-bold text-slate-800 text-base sm:text-xl font-heading leading-tight">${card.label}</span>
+        `;
+        grid.appendChild(cardEl);
+      });
+    }
+
+    // --- EVENT HANDLERS ---
+    function switchCategory(cat) {
+      currentCategory = cat;
+      document.querySelectorAll('.cat-tab').forEach(tab => {
+        tab.className = 'cat-tab bg-white hover:bg-indigo-50 text-slate-700 font-bold px-4 py-2.5 rounded-2xl text-sm sm:text-base flex items-center space-x-2 whitespace-nowrap transition border border-slate-200';
+      });
+
+      const activeTab = document.getElementById(`tab-${cat}`);
+      if (activeTab) {
+        activeTab.className = 'cat-tab bg-indigo-600 text-white font-bold px-4 py-2.5 rounded-2xl shadow-sm text-sm sm:text-base flex items-center space-x-2 whitespace-nowrap transition';
+      }
+
+      renderCards();
+    }
+
+    function setTouchMode(mode) {
+      touchMode = mode;
+    }
+
+    function handleCardClick(card) {
+      // Play soft feedback audio tap
+      playTapSound();
+
+      if (touchMode === 'instant') {
+        speakText(card.text);
+        // Visual indicator in sentence bar for feedback
+        addWordToSentence(card, false);
+      } else {
+        addWordToSentence(card, true);
+      }
+    }
+
+    function addWordToSentence(card, keepInBar = true) {
+      if (!keepInBar) {
+        // Temp view in bar
+        sentenceWords = [card];
+      } else {
+        sentenceWords.push(card);
+      }
+      renderSentenceBar();
+    }
+
+    function renderSentenceBar() {
+      const container = document.getElementById('sentence-container');
+      const placeholder = document.getElementById('placeholder-text');
+
+      if (sentenceWords.length === 0) {
+        container.innerHTML = '<span id="placeholder-text" class="text-slate-400 text-sm pl-2">아래 카드를 터치해서 말을 완성해보세요!</span>';
+        return;
+      }
+
+      container.innerHTML = '';
+      sentenceWords.forEach((item, index) => {
+        const chip = document.createElement('div');
+        chip.className = 'bg-white border border-indigo-200 shadow-sm rounded-xl px-3 py-1.5 flex items-center space-x-1.5 shrink-0 animate-scale-up';
+        chip.innerHTML = `
+          <span class="text-lg">${item.emoji}</span>
+          <span class="font-bold text-slate-800 text-sm font-heading">${item.label}</span>
+          <button onclick="removeWordIndex(${index})" class="text-slate-300 hover:text-rose-500 ml-1 text-xs">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        `;
+        container.appendChild(chip);
+      });
+    }
+
+    function removeWordIndex(index) {
+      sentenceWords.splice(index, 1);
+      renderSentenceBar();
+    }
+
+    function removeLastWord() {
+      sentenceWords.pop();
+      renderSentenceBar();
+    }
+
+    function clearSentence() {
+      sentenceWords = [];
+      renderSentenceBar();
+    }
+
+    function speakCurrentSentence() {
+      if (sentenceWords.length === 0) {
+        speakText("말할 카드를 선택해 주세요.");
+        return;
+      }
+
+      const fullText = sentenceWords.map(w => w.text || w.label).join(' ');
+      speakText(fullText);
+    }
+
+    // --- STREAMING_CHUNK:Implementing Speech Synthesis (Web Speech API & Gemini TTS API)... -->
+    // Web Audio Chime Sound Effect
+    function playTapSound() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+        osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.08); // E5
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.09);
+      } catch (e) {}
+    }
+
+    // TTS Engine Switch
+    function toggleTTSEngine() {
+      isGeminiTTS = !isGeminiTTS;
+      const label = document.getElementById('tts-engine-label');
+      const btn = document.getElementById('tts-toggle-btn');
+
+      if (isGeminiTTS) {
+        label.innerText = 'AI 고품질 음성';
+        btn.className = 'bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-xs sm:text-sm px-3 py-2 rounded-xl flex items-center space-x-1.5 transition border border-amber-300 shadow';
+      } else {
+        label.innerText = '기본 빠른 음성';
+        btn.className = 'bg-indigo-700 hover:bg-indigo-800 text-xs sm:text-sm px-3 py-2 rounded-xl flex items-center space-x-1.5 transition font-medium border border-indigo-500';
+      }
+    }
+
+    // Main Speech Function
+    async function speakText(text, isEmergency = false) {
+      if (!text) return;
+
+      if (isGeminiTTS && !isEmergency) {
+        // Try Gemini High-Quality Audio
+        const success = await speakWithGeminiTTS(text);
+        if (!success) {
+          // Fallback to Web Speech API
+          speakWithWebSpeech(text);
+        }
+      } else {
+        speakWithWebSpeech(text, isEmergency);
+      }
+    }
+
+    // Standard Browser Web Speech API (Fast & Reliable)
+    function speakWithWebSpeech(text, isEmergency = false) {
+      if (!('speechSynthesis' in window)) {
+        alert("이 브라우저는 음성 재생을 지원하지 않습니다.");
+        return;
+      }
+
+      window.speechSynthesis.cancel(); // Stop any active speech
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ko-KR';
+      utterance.rate = isEmergency ? 1.1 : 0.95; // Slightly clear rate for kids
+      utterance.pitch = 1.1; // Friendly slightly higher pitch
+
+      // Try finding Korean voices
+      const voices = window.speechSynthesis.getVoices();
+      const koVoice = voices.find(v => v.lang.includes('ko') || v.lang.includes('KR'));
+      if (koVoice) {
+        utterance.voice = koVoice;
+      }
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // Gemini TTS API (gemini-2.5-flash-preview-tts)
+    async function speakWithGeminiTTS(text) {
+      showToast(true);
+      try {
+        const apiKey = ""; // Built-in runtime key
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+
+        const payload = {
+          contents: [{
+            parts: [{ text: `어린이 목소리로 밝고 똑부러지게 말해주세요: "${text}"` }]
+          }],
+          generationConfig: {
+            responseModalities: ["AUDIO"],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: { voiceName: "Kore" } // Kore, Zephyr, Puck
+              }
+            }
+          }
+        };
+
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error('Gemini TTS fetch error');
+
+        const result = await response.json();
+        const part = result?.candidates?.[0]?.content?.parts?.[0];
+        const audioBase64 = part?.inlineData?.data;
+        const mimeType = part?.inlineData?.mimeType || "";
+
+        if (audioBase64) {
+          // Extract sample rate from mimeType if available (e.g. audio/L16;rate=24000)
+          let sampleRate = 24000;
+          const match = mimeType.match(/rate=(\d+)/);
+          if (match && match[1]) {
+            sampleRate = parseInt(match[1], 10);
+          }
+
+          const pcmData = base64ToArrayBuffer(audioBase64);
+          const pcm16 = new Int16Array(pcmData);
+          const wavBlob = pcmToWav(pcm16, sampleRate);
+          const audioUrl = URL.createObjectURL(wavBlob);
+
+          const audio = new Audio(audioUrl);
+          audio.play();
+          showToast(false);
+          return true;
+        }
+      } catch (err) {
+        console.warn("Gemini TTS fallback to local speech:", err);
+      }
+      showToast(false);
+      return false;
+    }
+
+    // PCM to WAV Converter Helper
+    function pcmToWav(pcmInt16Array, sampleRate) {
+      const numChannels = 1;
+      const bitsPerSample = 16;
+      const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+      const blockAlign = numChannels * (bitsPerSample / 8);
+      const dataSize = pcmInt16Array.length * 2;
+      const buffer = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(buffer);
+
+      function writeString(v, offset, str) {
+        for (let i = 0; i < str.length; i++) {
+          v.setUint8(offset + i, str.charCodeAt(i));
+        }
+      }
+
+      writeString(view, 0, 'RIFF');
+      view.setUint32(4, 36 + dataSize, true);
+      writeString(view, 8, 'WAVE');
+      writeString(view, 12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true); // Raw PCM
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, byteRate, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, bitsPerSample, true);
+      writeString(view, 36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      let offset = 44;
+      for (let i = 0; i < pcmInt16Array.length; i++, offset += 2) {
+        view.setInt16(offset, pcmInt16Array[i], true);
+      }
+
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    function base64ToArrayBuffer(base64) {
+      const binaryString = atob(base64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return bytes.buffer;
+    }
+
+    function showToast(show) {
+      const toast = document.getElementById('toast-loading');
+      if (show) {
+        toast.classList.remove('opacity-0', 'pointer-events-none');
+        toast.classList.add('opacity-100');
+      } else {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }
+    }
+
+    // --- MODALS & ACCESSIBILITY ---
+    function openBigDisplayModal() {
+      const modal = document.getElementById('big-display-modal');
+      const modalText = document.getElementById('modal-text');
+      const modalEmoji = document.getElementById('modal-emoji');
+
+      if (sentenceWords.length > 0) {
+        modalText.innerText = sentenceWords.map(w => w.text || w.label).join(' ');
+        modalEmoji.innerText = sentenceWords[sentenceWords.length - 1].emoji || '📢';
+      } else {
+        modalText.innerText = "선생님, 말을 하고 싶어요!";
+        modalEmoji.innerText = '🙋‍♂️';
+      }
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeBigDisplayModal() {
+      const modal = document.getElementById('big-display-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function openCustomCardModal() {
+      document.getElementById('custom-card-modal').classList.remove('hidden');
+      document.getElementById('custom-card-modal').classList.add('flex');
+    }
+
+    function closeCustomCardModal() {
+      document.getElementById('custom-card-modal').classList.add('hidden');
+      document.getElementById('custom-card-modal').classList.remove('flex');
+    }
+
+    function selectEmoji(emoji) {
+      selectedEmojiForCustom = emoji;
+      document.getElementById('custom-card-emoji').value = emoji;
+    }
+
+    function saveCustomCard() {
+      const textInput = document.getElementById('custom-card-text').value.trim();
+      const emojiInput = document.getElementById('custom-card-emoji').value.trim() || '⭐';
+
+      if (!textInput) {
+        speakText('카드 내용을 입력해주세요.');
+        return;
+      }
+
+      const newCard = {
+        id: 'c_' + Date.now(),
+        emoji: emojiInput,
+        label: textInput,
+        text: textInput,
+        bg: 'bg-amber-50 border-amber-200'
+      };
+
+      cardDatabase.custom.push(newCard);
+      localStorage.setItem('aac_custom_cards', JSON.stringify(cardDatabase.custom));
+
+      document.getElementById('custom-card-text').value = '';
+      closeCustomCardModal();
+      switchCategory('custom');
+      speakText('새 카드가 만들어졌어요!');
+    }
+
+    function toggleHighContrast() {
+      document.body.classList.toggle('high-contrast');
+    }
+
+    // Initialize on window load
+    window.onload = function() {
+      loadCustomCards();
+      renderCards();
+      
+      // Warm up synthesis voices
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.getVoices();
+      }
+    };
+  </script>
+</body>
+</html>
