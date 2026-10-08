@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>꿈을 낚는 신나는 직업 낚시 놀이</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Jua / Nanum Gothic) -->
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Nanum+Gothic:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Jua', 'Nanum Gothic', sans-serif;
+            background: linear-gradient(180deg, #e0f7fa 0%, #80deea 100%);
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        
+        .ocean-bg {
+            background: linear-gradient(180deg, #29b6f6 0%, #0288d1 50%, #01579b 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .wave-animation {
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0 C150,90 350,-40 500,40 C650,120 900,20 1200,60 L1200,120 L0,120 Z' fill='%2329b6f6' opacity='0.4'%3E%3C/path%3E%3C/svg%3E");
+            background-size: 1200px 100%;
+            animation: wave 12s linear infinite;
+        }
+
+        @keyframes wave {
+            0% { background-position-x: 0; }
+            100% { background-position-x: 1200px; }
+        }
+
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            animation: floatUp 6s infinite ease-in;
+            pointer-events: none;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(100%) scale(0.5); opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { transform: translateY(-100px) scale(1.2); opacity: 0; }
+        }
+
+        /* Large touchable target response */
+        .big-btn {
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+        .big-btn:active {
+            transform: scale(0.95);
+        }
+
+        .fish-card {
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .fish-card:hover {
+            transform: translateY(-5px) scale(1.03);
+        }
+
+        /* High contrast text inside fish body */
+        .fish-text-inside {
+            color: #fef08a; /* Bright yellow */
+            font-weight: 900;
+            text-shadow: -2px -2px 0 #0f172a, 2px -2px 0 #0f172a, -2px 2px 0 #0f172a, 2px 2px 0 #0f172a, 0 4px 6px rgba(0,0,0,0.8);
+            letter-spacing: -0.02em;
+        }
+
+        .fish-inner-badge {
+            background-color: rgba(15, 23, 42, 0.85);
+            border: 2px solid #fde047;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden text-gray-800">
+
+    <!-- Header Bar -->
+    <header class="bg-amber-400 border-b-4 border-amber-600 px-4 py-3 shadow-md sticky top-0 z-30">
+        <div class="max-w-5xl mx-auto flex flex-wrap justify-between items-center gap-2">
+            <div class="flex items-center gap-3">
+                <span class="text-3xl md:text-4xl">🎣</span>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-extrabold text-amber-950 tracking-wide drop-shadow-sm">
+                        꿈을 낚는 직업 낚시 놀이
+                    </h1>
+                    <p class="text-xs md:text-sm font-semibold text-amber-900 hidden sm:block">바닷속 물고기를 잡으며 여러 직업을 탐색해요!</p>
+                </div>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="flex items-center gap-2">
+                <div class="bg-amber-800 text-yellow-300 font-black py-1.5 px-3 rounded-2xl border-2 border-amber-950 flex items-center gap-1.5 shadow text-xs md:text-sm">
+                    <span>⭐</span>
+                    <span id="headerLevelBadge">레벨 1</span>
+                </div>
+                <button id="ttsToggleBtn" onclick="toggleTTS()" class="bg-white hover:bg-amber-100 text-amber-900 font-bold py-2 px-3 rounded-2xl border-2 border-amber-600 flex items-center gap-2 text-sm shadow big-btn">
+                    <i id="ttsIcon" class="fas font-black fa-volume-high text-green-600 text-lg"></i>
+                    <span id="ttsText" class="hidden sm:inline">소리 켜짐</span>
+                </button>
+                <div class="bg-blue-600 text-white font-black py-2 px-4 rounded-2xl border-2 border-blue-800 flex items-center gap-2 shadow text-sm md:text-base">
+                    <span>🏆 모은 직업:</span>
+                    <span id="caughtCountBadge" class="text-yellow-300 text-xl font-extrabold">0</span>
+                    <span>개</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="bg-sky-200 p-2 border-b-2 border-sky-300 shadow-inner">
+        <div class="max-w-4xl mx-auto flex justify-center gap-2 md:gap-4">
+            <button onclick="switchTab('fishing')" id="tab-fishing" class="tab-btn active-tab bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-4 md:px-6 rounded-2xl text-base md:text-xl shadow-md border-2 border-sky-800 flex items-center gap-2 flex-1 justify-center max-w-[200px]">
+                <span>🌊</span> 자유 낚시터
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-quiz" class="tab-btn bg-white hover:bg-sky-100 text-sky-900 font-bold py-3 px-4 md:px-6 rounded-2xl text-base md:text-xl shadow border-2 border-sky-400 flex items-center gap-2 flex-1 justify-center max-w-[200px]">
+                <span>❓</span> 직업 퀴즈
+            </button>
+            <button onclick="switchTab('album')" id="tab-album" class="tab-btn bg-white hover:bg-sky-100 text-sky-900 font-bold py-3 px-4 md:px-6 rounded-2xl text-base md:text-xl shadow border-2 border-sky-400 flex items-center gap-2 flex-1 justify-center max-w-[200px]">
+                <span>📖</span> 내 직업 도감
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Interactive Area -->
+    <main class="flex-1 max-w-5xl w-full mx-auto p-2 md:p-4 flex flex-col items-center">
+        
+        <!-- SECTION 1: Fishing Sea Mode -->
+        <section id="section-fishing" class="w-full flex flex-col items-center gap-3">
+            <div class="w-full flex flex-wrap items-center justify-between bg-sky-100 border-2 border-sky-300 rounded-2xl p-2.5 gap-2 shadow-sm">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">🌊</span>
+                    <span class="font-black text-sky-950 text-sm md:text-base">낚시터 구역:</span>
+                    <span id="fishingLevelLabel" class="bg-sky-600 text-white text-xs md:text-sm font-bold px-2.5 py-1 rounded-full">
+                        1단계 (초급 직업)
+                    </span>
+                </div>
+                <!-- Level Switch Buttons -->
+                <div id="levelFilterGroup" class="flex items-center gap-1.5 overflow-x-auto py-0.5">
+                    <!-- Dynamic level selector buttons injected via JS -->
+                </div>
+            </div>
+
+            <div class="bg-amber-100 border-2 border-amber-400 rounded-2xl p-3 text-center w-full shadow-sm flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 text-left">
+                    <span class="text-2xl">💡</span>
+                    <p class="text-amber-900 font-bold text-sm md:text-base">
+                        물고기를 <span class="text-blue-700 underline font-black">직접 누르거나</span>, <span class="text-red-600 font-black">[낚시바늘 내리기]</span> 버튼을 눌러보세요!
+                    </p>
+                </div>
+                <button onclick="speakInstruction('헤엄치는 물고기를 클릭하거나 낚시바늘 내리기 버튼을 눌러 직업 물고기를 낚아보세요!')" class="bg-amber-300 hover:bg-amber-400 text-amber-900 p-2 rounded-full text-lg shadow shrink-0">
+                    🔊
+                </button>
+            </div>
+
+            <!-- Sea Container -->
+            <div class="w-full relative rounded-3xl border-4 border-sky-800 ocean-bg shadow-2xl overflow-hidden min-h-[420px] md:min-h-[500px] flex flex-col justify-between">
+                <div class="wave-animation h-12 w-full absolute top-0 left-0 z-10 pointer-events-none"></div>
+
+                <div class="bubble w-6 h-6 left-[10%]" style="animation-delay: 0s;"></div>
+                <div class="bubble w-8 h-8 left-[30%]" style="animation-delay: 2s;"></div>
+                <div class="bubble w-5 h-5 left-[60%]" style="animation-delay: 1s;"></div>
+                <div class="bubble w-7 h-7 left-[80%]" style="animation-delay: 3s;"></div>
+
+                <!-- Fisherman Boat -->
+                <div class="relative z-20 flex justify-center pt-2">
+                    <div id="boat" class="transition-all duration-300 flex flex-col items-center">
+                        <div class="text-5xl md:text-6xl drop-shadow-md">🚣‍♂️</div>
+                        <div class="bg-amber-800 text-amber-100 text-xs px-3 py-1 rounded-full font-bold border border-amber-600 shadow">
+                            꿈돌이 낚시꾼
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fishing Line SVG Overlay -->
+                <svg id="fishingSvg" class="absolute inset-0 w-full h-full pointer-events-none z-10">
+                    <line id="hookLine" x1="50%" y1="60" x2="50%" y2="70" stroke="#ffd54f" stroke-width="4" stroke-dasharray="6,4" />
+                    <g id="hookGroup" transform="translate(0, 0)">
+                        <path d="M -5 0 Q -5 15 5 15 Q 12 15 12 5 L 12 0" fill="none" stroke="#eceff1" stroke-width="4" stroke-linecap="round"/>
+                        <circle cx="0" cy="0" r="3" fill="#ffd54f" />
+                    </g>
+                </svg>
+
+                <!-- Interactive Sea Area -->
+                <div id="seaArea" class="relative w-full h-[300px] md:h-[360px] z-20 my-auto">
+                    <!-- Dynamic fish populated via JS -->
+                </div>
+
+                <!-- Fishing Control Button -->
+                <div class="relative z-20 bg-sky-900/80 backdrop-blur-sm p-3 w-full flex justify-center items-center gap-4 border-t-2 border-sky-400">
+                    <button onclick="dropHook()" class="big-btn bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-extrabold text-lg md:text-2xl py-3 px-8 rounded-full border-4 border-white shadow-lg flex items-center gap-3">
+                        <span class="text-2xl">🪝</span>
+                        <span>낚시바늘 내리기!</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: Quiz Mode -->
+        <section id="section-quiz" class="w-full hidden flex-col items-center gap-4">
+            <div class="bg-white rounded-3xl border-4 border-purple-400 p-4 md:p-6 w-full shadow-xl text-center flex flex-col items-center gap-4">
+                <div class="flex items-center justify-between w-full border-b-2 border-purple-100 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-purple-100 text-purple-800 text-base md:text-xl font-black px-4 py-1.5 rounded-full">
+                            🎯 직업 맞히기 퀴즈
+                        </span>
+                        <span id="quizCurrentLevelTag" class="bg-amber-400 text-amber-950 text-xs md:text-sm font-extrabold px-3 py-1 rounded-full border border-amber-600">
+                            ⭐ 레벨 1
+                        </span>
+                    </div>
+                    <button onclick="speakQuizQuestion()" class="bg-purple-500 hover:bg-purple-600 text-white p-2.5 rounded-full shadow flex items-center gap-2 text-sm font-bold">
+                        <span>🔊 퀴즈 다시 듣기</span>
+                    </button>
+                </div>
+
+                <!-- XP / Level Progress Bar -->
+                <div class="w-full max-w-xl bg-purple-50 border-2 border-purple-200 rounded-2xl p-3 flex flex-col gap-1.5">
+                    <div class="flex justify-between items-center text-xs md:text-sm font-bold text-purple-900">
+                        <span>🚀 레벨 업까지 진행도</span>
+                        <span id="quizXpText" class="text-purple-700 font-extrabold">0 / 3 정답</span>
+                    </div>
+                    <div class="w-full bg-purple-200 rounded-full h-4 overflow-hidden border border-purple-300">
+                        <div id="quizXpBar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-full rounded-full transition-all duration-500 w-0"></div>
+                    </div>
+                </div>
+
+                <div class="bg-purple-50 rounded-2xl p-4 border-2 border-purple-200 w-full max-w-2xl">
+                    <p class="text-gray-500 text-sm font-bold mb-1">다음 설명에 해당하는 직업 물고기를 찾아보세요!</p>
+                    <h2 id="quizQuestionText" class="text-xl md:text-2xl font-black text-purple-950 leading-relaxed">
+                        질문을 불러오는 중입니다...
+                    </h2>
+                    <div id="quizHintBox" class="mt-3 bg-white p-3 rounded-xl border border-purple-200 inline-block text-purple-700 font-bold text-sm md:text-base">
+                        💡 도구 힌트: <span id="quizHintTools">-</span>
+                    </div>
+                </div>
+
+                <div class="text-amber-800 font-extrabold text-sm md:text-base">
+                    👇 아래 물고기 중에서 정답 직업을 선택해 보세요!
+                </div>
+
+                <div id="quizOptionsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-3xl mt-2">
+                    <!-- Quiz options injected dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: Job Album Mode -->
+        <section id="section-album" class="w-full hidden flex-col items-center gap-4">
+            <div class="bg-white rounded-3xl border-4 border-teal-400 p-4 md:p-6 w-full shadow-xl">
+                <div class="flex flex-wrap justify-between items-center border-b-2 border-teal-100 pb-4 mb-4 gap-2">
+                    <div>
+                        <h2 class="text-2xl font-black text-teal-900 flex items-center gap-2">
+                            <span>📖</span> 나의 직업 수집 도감
+                        </h2>
+                        <p class="text-xs md:text-sm text-teal-700 font-bold">내가 낚시로 모은 직업들을 눌러서 음성 설명을 들어보세요.</p>
+                    </div>
+                    <button onclick="speakInstruction('내가 모은 직업 도감입니다. 직업 카드를 누르면 설명을 들을 수 있어요!')" class="bg-teal-100 text-teal-800 p-2 rounded-xl text-sm font-bold flex items-center gap-1">
+                        🔊 설명 듣기
+                    </button>
+                </div>
+
+                <!-- Album Grid -->
+                <div id="albumGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    <!-- Album cards dynamic -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal: Catch Celebration Card -->
+    <div id="catchModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden transition-opacity duration-300">
+        <div class="bg-white rounded-3xl border-8 border-yellow-400 p-6 max-w-md w-full shadow-2xl flex flex-col items-center text-center relative">
+            <div class="absolute -top-10 bg-yellow-400 text-amber-950 font-black text-xl px-6 py-2 rounded-full border-4 border-white shadow-md">
+                🎉 축하합니다! 낚시 성공!
+            </div>
+
+            <div id="modalJobBadge" class="w-28 h-28 md:w-32 md:h-32 rounded-3xl flex items-center justify-center text-6xl md:text-7xl shadow-inner mt-4 mb-3 border-4 border-white" style="background-color: #ffe082;">
+                👨‍🍳
+            </div>
+
+            <span id="modalJobCategory" class="bg-sky-100 text-sky-800 text-xs font-black px-3 py-1 rounded-full mb-1">
+                직업 분야
+            </span>
+            <h2 id="modalJobName" class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-2">
+                요리사
+            </h2>
+
+            <div class="bg-amber-50 p-4 rounded-2xl border-2 border-amber-200 w-full mb-4 text-left space-y-2">
+                <p id="modalJobDesc" class="text-gray-800 font-bold text-base md:text-lg leading-relaxed">
+                    맛있는 음식과 요리를 정성껏 만드는 일을 해요.
+                </p>
+                <div class="text-xs md:text-sm text-gray-600 font-semibold border-t border-amber-200 pt-2 flex flex-col gap-1">
+                    <div>🧰 <b>주요 도구:</b> <span id="modalJobTools">냄비, 칼, 프라이팬</span></div>
+                    <div>🏢 <b>일하는 곳:</b> <span id="modalJobPlace">식당, 레스토랑</span></div>
+                </div>
+            </div>
+
+            <div class="flex gap-2 w-full">
+                <button id="modalListenBtn" onclick="speakCurrentModalJob()" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-extrabold py-3 px-4 rounded-2xl shadow-lg border-2 border-green-700 flex items-center justify-center gap-2 text-lg big-btn">
+                    <span>🔊</span> 다시 듣기
+                </button>
+                <button onclick="closeCatchModal()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-3 px-4 rounded-2xl shadow-lg border-2 border-amber-700 text-lg big-btn">
+                    확인 👍
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Level Up Celebration -->
+    <div id="levelUpModal" class="fixed inset-0 bg-black/65 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden transition-opacity duration-300">
+        <div class="bg-gradient-to-b from-yellow-100 to-amber-50 rounded-3xl border-8 border-amber-400 p-6 max-w-md w-full shadow-2xl flex flex-col items-center text-center relative animate-bounce-short">
+            <div class="absolute -top-10 bg-gradient-to-r from-amber-500 to-yellow-400 text-white font-black text-2xl px-8 py-2.5 rounded-full border-4 border-white shadow-xl">
+                🌟 LEVEL UP! 🌟
+            </div>
+
+            <div class="text-7xl my-4 drop-shadow-md">🎉</div>
+            <h2 id="levelUpTitle" class="text-3xl md:text-4xl font-black text-amber-950 mb-1">
+                레벨 2 달성!
+            </h2>
+            <p id="levelUpSubtext" class="text-amber-800 font-extrabold text-base md:text-lg mb-4">
+                축하합니다! 새로운 직업 물고기가 해금되었습니다!
+            </p>
+
+            <div class="bg-white p-4 rounded-2xl border-2 border-amber-300 w-full mb-5 shadow-inner">
+                <p class="text-xs font-bold text-gray-500 mb-2">🔓 해금된 새로운 직업 목록:</p>
+                <div id="levelUpUnlockedJobs" class="flex flex-wrap justify-center gap-2">
+                    <!-- Injected dynamically -->
+                </div>
+            </div>
+
+            <button onclick="closeLevelUpModal()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-lg border-2 border-green-700 text-xl big-btn">
+                새로운 직업 보러가기 🎣
+            </button>
+        </div>
+    </div>
+
+    <!-- Canvas Confetti Layer -->
+    <canvas id="confettiCanvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
+
+    <script>
+        // Global State Variables
+        const caughtJobs = new Set();
+        let activeFishList = [];
+        let isHooking = false;
+        let currentModalJob = null;
+        let currentQuizJob = null;
+        let ttsEnabled = true;
+
+        // Level & Progression State
+        let currentLevel = 1;
+        const maxLevel = 4;
+        let levelExp = 0;
+        const expNeededPerLevel = 3;
+        let selectedFishingLevel = 1; // Level filter for fishing grounds
+
+        // Level Names Definition
+        const LEVEL_NAMES = {
+            1: "1단계 (고마운 이웃들)",
+            2: "2단계 (생활 서비스)",
+            3: "3단계 (전문가와 예술)",
+            4: "4단계 (미래와 도전)"
+        };
+
+        // Job Dataset with Levels
+        const JOBS_DATA = [
+            // Level 1: Basic & Community
+            { id: 'chef', level: 1, name: '요리사', category: '음식 / 요리', icon: '👨‍🍳', color: '#e63946', bgLight: '#fde8e8', desc: '맛있는 음식과 요리를 만들어 사람들에게 즐거움을 줘요.', tools: '냄비, 프라이팬, 조리도구', place: '식당, 레스토랑', speech: '요리사는 맛있는 음식과 요리를 정성껏 만드는 사람이에요!' },
+            { id: 'police', level: 1, name: '경찰관', category: '안전 / 공공', icon: '👮‍♂️', color: '#1d3557', bgLight: '#e0e7ff', desc: '우리 동네 안전을 지키고 위험한 일을 해결해 줘요.', tools: '경찰차, 무전기, 순찰복', place: '경찰서, 우리 동네', speech: '경찰관은 주민들의 안전을 지키고 순찰하는 고마운 분이에요!' },
+            { id: 'firefighter', level: 1, name: '소방관', category: '안전 / 구조', icon: '👨‍🚒', color: '#d62828', bgLight: '#fce8e8', desc: '불이 나면 불을 끄고 위험한 곳에서 사람을 구해요.', tools: '소방차, 소화 호스, 방화복', place: '소방서, 화재 현장', speech: '소방관은 위험한 불을 끄고 사람들을 빠르게 구출해요!' },
+            { id: 'doctor', level: 1, name: '의사', category: '보건 / 의료', icon: '👨‍⚕️', color: '#2a9d8f', bgLight: '#e6f4f1', desc: '아픈 사람을 진찰하고 약을 처방해 건강하게 해 줘요.', tools: '청진기, 체온계, 주사기', place: '병원, 의원', speech: '의사는 몸이 아픈 사람을 진찰하고 치료해 주는 선생님이에요!' },
+
+            // Level 2: Service & Everyday Life
+            { id: 'baker', level: 2, name: '제빵사', category: '제과 / 제빵', icon: '🧁', color: '#f4a261', bgLight: '#fef3e7', desc: '고소하고 달콤한 빵과 예쁜 케이크를 만들어 제공해요.', tools: '오븐, 반죽기, 밀대', place: '빵집, 베이커리', speech: '제빵사는 고소하고 달콤한 빵과 케이크를 만드는 전문가예요!' },
+            { id: 'barista', level: 2, name: '바리스타', category: '음료 / 카페', icon: '☕', color: '#6d597a', bgLight: '#f1edf5', desc: '향기로운 커피와 시원하고 맛있는 음료를 만들어요.', tools: '커피 머신, 컵, 블렌더', place: '카페, 음료 전문점', speech: '바리스타는 정성을 담아 향긋한 커피와 음료를 만들어줘요!' },
+            { id: 'cleaner', level: 2, name: '환경정비원', category: '환경 / 관리', icon: '🧹', color: '#0077b6', bgLight: '#e1f5fe', desc: '거리와 건물을 깨끗하게 청소해 쾌적하게 만들어요.', tools: '빗자루, 청소기, 쓰레기봉투', place: '거리, 공원, 건물', speech: '환경정비원은 우리가 사는 곳을 깨끗하고 쾌적하게 청소해 줘요!' },
+            { id: 'delivery', level: 2, name: '택배기사', category: '물류 / 운송', icon: '📦', color: '#457b9d', bgLight: '#ebf3f7', desc: '소중한 상자와 편지를 집 앞까지 안전하게 배달해요.', tools: '택배 상자, 운송 차, 손수레', place: '물류센터, 우리집 앞', speech: '택배기사는 기다리던 상자와 선물을 집까지 안전하게 배달해 줘요!' },
+
+            // Level 3: Specialized & Creative
+            { id: 'gardener', level: 3, name: '원예가', category: '자연 / 식물', icon: '🧑‍🌾', color: '#00b4d8', bgLight: '#e0f7fa', desc: '예쁜 꽃과 푸른 나무를 정성껏 키우고 가꿔요.', tools: '물뿌리개, 모종삽, 가위', place: '꽃집, 수목원, 정원', speech: '원예가는 아름다운 꽃과 식물을 가꾸고 키우는 일을 해요!' },
+            { id: 'artist', level: 3, name: '화가', category: '예술 / 디자인', icon: '🎨', color: '#e76f51', bgLight: '#fcefe8', desc: '멋진 물감과 붓으로 도화지에 예쁜 그림을 그려요.', tools: '팔레트, 붓, 물감, 이젤', place: '화실, 미술관', speech: '화가는 상상력과 멋진 색깔로 도화지에 아름다운 그림을 그려요!' },
+            { id: 'hairdresser', level: 3, name: '미용사', category: '뷰티 / 헤어', icon: '💇‍♂️', color: '#e9c46a', bgLight: '#fdf8e7', desc: '머리를 예쁘게 자르고 멋진 헤어스타일을 만들어요.', tools: '가위, 빗, 헤어드라이어', place: '미용실, 헤어샵', speech: '미용사는 머리를 단정하고 멋지게 가꿔주는 전문가예요!' },
+            { id: 'vet', level: 3, name: '수의사', category: '동물 / 의료', icon: '🐶', color: '#ffb703', bgLight: '#fff8e1', desc: '아픈 강아지와 고양이 등 동물을 진찰하고 치료해요.', tools: '청진기, 청결 장갑, 동물약', place: '동물병원', speech: '수의사는 귀여운 동물 친구들이 아플 때 진찰하고 고쳐줘요!' },
+
+            // Level 4: Special & Future Dreams
+            { id: 'zookeeper', level: 4, name: '사육사', category: '동물 / 케어', icon: '🦁', color: '#fb8500', bgLight: '#fff3e0', desc: '동물원에서 동물 친구들을 건강하게 돌보고 모이를 줘요.', tools: '사료, 청소도구, 진료기록부', place: '동물원, 생태공원', speech: '사육사는 동물 친구들을 사랑으로 돌보고 관리하는 고마운 사람이에요!' },
+            { id: 'youtuber', level: 4, name: '크리에이터', category: '미디어 / 방송', icon: '🎥', color: '#e63946', bgLight: '#ffebee', desc: '재미있고 유익한 동영상을 만들어 사람들에게 보여줘요.', tools: '카메라, 마이크, 편집 컴퓨터', place: '스튜디오, 방송국', speech: '크리에이터는 다양한 주제로 유익한 영상 콘텐츠를 만드는 전문가예요!' },
+            { id: 'astronaut', level: 4, name: '우주비행사', category: '과학 / 탐사', icon: '👨‍🚀', color: '#3a86ef', bgLight: '#e8eaf6', desc: '우주선을 타고 우주로 나가 별과 행성을 탐험해요.', tools: '우주복, 우주선, 통신 장비', place: '우주선, 우주기지', speech: '우주비행사는 신비로운 우주를 탐험하고 연구하는 멋진 꿈을 이뤄요!' },
+            { id: 'farmer', level: 4, name: '농부', category: '자연 / 농업', icon: '🧑‍🌾', color: '#38b000', bgLight: '#f1f8e9', desc: '맛있는 쌀과 신선한 채소, 과일을 정성껏 키워요.', tools: '트랙터, 삽, 괭이', place: '농장, 과수원', speech: '농부는 우리가 먹는 맛있는 곡식과 과일을 정성껏 가꾸는 일을 해요!' }
+        ];
+
+        function toggleTTS() {
+            ttsEnabled = !ttsEnabled;
+            const icon = document.getElementById('ttsIcon');
+            const text = document.getElementById('ttsText');
+            if (ttsEnabled) {
+                icon.className = 'fas font-black fa-volume-high text-green-600 text-lg';
+                text.innerText = '소리 켜짐';
+                speakText('음성 안내가 켜졌습니다.');
+            } else {
+                icon.className = 'fas font-black fa-volume-xmark text-red-500 text-lg';
+                text.innerText = '소리 끔';
+                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            }
+        }
+
+        function speakText(text) {
+            if (!ttsEnabled || !('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ko-KR';
+            utterance.rate = 0.9;
+            utterance.pitch = 1.1;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function speakInstruction(text) {
+            speakText(text);
+        }
+
+        function playSound(type) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'drop') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.3);
+                } else if (type === 'catch' || type === 'correct') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(300, ctx.currentTime);
+                    osc.frequency.setValueAtTime(400, ctx.currentTime + 0.1);
+                    osc.frequency.setValueAtTime(500, ctx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.4);
+                } else if (type === 'levelup') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(261.63, ctx.currentTime);
+                    osc.frequency.setValueAtTime(329.63, ctx.currentTime + 0.12);
+                    osc.frequency.setValueAtTime(392.00, ctx.currentTime + 0.24);
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime + 0.36);
+                    gain.gain.setValueAtTime(0.4, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.6);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(200, ctx.currentTime);
+                    osc.frequency.setValueAtTime(150, ctx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.3);
+                }
+            } catch (e) {
+                console.log('Audio Context playback notice:', e);
+            }
+        }
+
+        function updateLevelUI() {
+            // Update Header & Quiz badges
+            document.getElementById('headerLevelBadge').innerText = `레벨 ${currentLevel}`;
+            document.getElementById('quizCurrentLevelTag').innerText = `⭐ 레벨 ${currentLevel}`;
+            
+            // Update Quiz XP Bar
+            const xpText = document.getElementById('quizXpText');
+            const xpBar = document.getElementById('quizXpBar');
+            if (xpText && xpBar) {
+                xpText.innerText = `${levelExp} / ${expNeededPerLevel} 정답`;
+                const percentage = Math.min(100, Math.round((levelExp / expNeededPerLevel) * 100));
+                xpBar.style.width = `${percentage}%`;
+            }
+
+            // Update Fishing Level Filter Buttons
+            renderLevelFilterButtons();
+        }
+
+        function renderLevelFilterButtons() {
+            const container = document.getElementById('levelFilterGroup');
+            if (!container) return;
+            container.innerHTML = '';
+
+            for (let lvl = 1; lvl <= maxLevel; lvl++) {
+                const isUnlocked = lvl <= currentLevel;
+                const isSelected = lvl === selectedFishingLevel;
+
+                const btn = document.createElement('button');
+                btn.className = `px-3 py-1 rounded-xl text-xs font-black transition-all flex items-center gap-1 ${
+                    isSelected
+                        ? 'bg-sky-700 text-white shadow-md border-2 border-sky-900 scale-105'
+                        : isUnlocked
+                            ? 'bg-white text-sky-900 hover:bg-sky-200 border border-sky-400'
+                            : 'bg-gray-200 text-gray-500 cursor-not-allowed border border-gray-300 opacity-70'
+                }`;
+
+                btn.innerHTML = `
+                    <span>${isUnlocked ? '⭐' : '🔒'}</span>
+                    <span>${lvl}단계</span>
+                `;
+
+                btn.onclick = () => {
+                    if (isUnlocked) {
+                        selectedFishingLevel = lvl;
+                        document.getElementById('fishingLevelLabel').innerText = LEVEL_NAMES[lvl];
+                        renderLevelFilterButtons();
+                        createSwimmingFish();
+                        speakText(`${LEVEL_NAMES[lvl]} 직업 물고기 낚시터로 이동했어요!`);
+                    } else {
+                        speakText(`아직 잠겨있는 단계예요. 퀴즈를 풀어 레벨 ${lvl}을 달성해 보세요!`);
+                    }
+                };
+
+                container.appendChild(btn);
+            }
+        }
+
+        function getFishSvgShape(color, shapeType) {
+            const strokeColor = '#0f172a';
+            
+            if (shapeType % 3 === 0) {
+                return `
+                <svg class="fish-body-svg w-full h-full drop-shadow-lg transition-transform" viewBox="0 0 180 110" preserveAspectRatio="none">
+                    <polygon points="140,55 175,20 165,55 175,90" fill="${color}" stroke="${strokeColor}" stroke-width="4" stroke-linejoin="round" />
+                    <path d="M 60 22 Q 90 0 120 22 Z" fill="${color}" stroke="${strokeColor}" stroke-width="4" />
+                    <path d="M 70 88 Q 95 110 115 88 Z" fill="${color}" stroke="${strokeColor}" stroke-width="4" />
+                    <ellipse cx="80" cy="55" rx="70" ry="38" fill="${color}" stroke="${strokeColor}" stroke-width="5" />
+                    <circle cx="35" cy="42" r="8" fill="#ffffff" stroke="${strokeColor}" stroke-width="2" />
+                    <circle cx="32" cy="42" r="4" fill="#000000" />
+                </svg>`;
+            } else if (shapeType % 3 === 1) {
+                return `
+                <svg class="fish-body-svg w-full h-full drop-shadow-lg transition-transform" viewBox="0 0 180 110" preserveAspectRatio="none">
+                    <polygon points="145,55 175,30 165,55 175,80" fill="${color}" stroke="${strokeColor}" stroke-width="4" />
+                    <circle cx="85" cy="55" r="50" fill="${color}" stroke="${strokeColor}" stroke-width="5" />
+                    <path d="M 45 25 Q 85 10 125 25" fill="none" stroke="${strokeColor}" stroke-width="3" stroke-dasharray="4 4"/>
+                    <circle cx="50" cy="45" r="9" fill="#ffffff" stroke="${strokeColor}" stroke-width="2" />
+                    <circle cx="47" cy="45" r="4.5" fill="#000000" />
+                </svg>`;
+            } else {
+                return `
+                <svg class="fish-body-svg w-full h-full drop-shadow-lg transition-transform" viewBox="0 0 180 110" preserveAspectRatio="none">
+                    <path d="M 140 55 C 160 30 178 20 170 55 C 178 90 160 80 140 55 Z" fill="${color}" stroke="${strokeColor}" stroke-width="4" />
+                    <path d="M 15 60 C 15 20 100 15 145 55 C 100 95 30 90 15 60 Z" fill="${color}" stroke="${strokeColor}" stroke-width="5" />
+                    <circle cx="38" cy="50" r="7" fill="#ffffff" stroke="${strokeColor}" stroke-width="2" />
+                    <circle cx="36" cy="50" r="3.5" fill="#000000" />
+                </svg>`;
+            }
+        }
+
+        function createSwimmingFish() {
+            const seaArea = document.getElementById('seaArea');
+            if (!seaArea) return;
+            seaArea.innerHTML = '';
+            activeFishList = [];
+
+            // Filter jobs based on selected fishing level
+            const levelJobs = JOBS_DATA.filter(job => job.level === selectedFishingLevel);
+
+            levelJobs.forEach((job, index) => {
+                const fishEl = document.createElement('div');
+                const posX = Math.random() * 70 + 5;
+                const posY = (index % 4) * 65 + Math.random() * 15 + 10;
+                const speed = (Math.random() * 0.4 + 0.3) * (Math.random() > 0.5 ? 1 : -1);
+
+                fishEl.className = 'absolute cursor-pointer flex items-center justify-center transition-transform hover:scale-110 touch-manipulation z-20 w-44 md:w-52 h-24 md:h-28';
+                fishEl.style.left = `${posX}%`;
+                fishEl.style.top = `${posY}px`;
+
+                const svgGraphic = getFishSvgShape(job.color, index);
+
+                fishEl.innerHTML = `
+                    <div class="relative w-full h-full flex items-center justify-center">
+                        ${svgGraphic}
+                        <div class="job-text-overlay absolute inset-0 flex flex-col items-center justify-center text-center p-1 pointer-events-none z-10 pl-4 pr-8">
+                            <div class="flex items-center justify-center">
+                                <span class="text-2xl md:text-3xl filter drop-shadow-md">${job.icon}</span>
+                            </div>
+                            <div class="fish-inner-badge mt-0.5 px-3 py-0.5 rounded-full flex items-center justify-center">
+                                <span class="fish-text-inside text-sm md:text-base font-extrabold whitespace-nowrap">
+                                    ${job.name}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                fishEl.onclick = (e) => {
+                    e.stopPropagation();
+                    catchJobFish(job);
+                };
+
+                seaArea.appendChild(fishEl);
+
+                activeFishList.push({
+                    element: fishEl,
+                    job: job,
+                    x: posX,
+                    y: posY,
+                    speed: speed,
+                    direction: speed > 0 ? 1 : -1
+                });
+            });
+        }
+
+        function animateSea() {
+            activeFishList.forEach(fish => {
+                fish.x += fish.speed * 0.15;
+                if (fish.x > 75) {
+                    fish.x = 75;
+                    fish.speed *= -1;
+                } else if (fish.x < 3) {
+                    fish.x = 3;
+                    fish.speed *= -1;
+                }
+
+                fish.element.style.left = `${fish.x}%`;
+                
+                const fishBodySvg = fish.element.querySelector('.fish-body-svg');
+                if (fishBodySvg) {
+                    if (fish.speed < 0) {
+                        fishBodySvg.style.transform = 'scaleX(-1)';
+                    } else {
+                        fishBodySvg.style.transform = 'scaleX(1)';
+                    }
+                }
+            });
+
+            requestAnimationFrame(animateSea);
+        }
+
+        function dropHook() {
+            if (isHooking) return;
+            isHooking = true;
+
+            playSound('drop');
+
+            const hookLine = document.getElementById('hookLine');
+            const hookGroup = document.getElementById('hookGroup');
+            
+            const randomFish = activeFishList[Math.floor(Math.random() * activeFishList.length)];
+            const targetX = randomFish ? randomFish.x : 50;
+            const targetY = randomFish ? randomFish.y + 40 : 200;
+
+            const boat = document.getElementById('boat');
+            boat.style.transform = `translateX(${(targetX - 50) * 4}px)`;
+
+            let currentY = 70;
+            const dropInterval = setInterval(() => {
+                currentY += 12;
+                hookLine.setAttribute('x1', `${targetX}%`);
+                hookLine.setAttribute('x2', `${targetX}%`);
+                hookLine.setAttribute('y2', currentY);
+                hookGroup.setAttribute('transform', `translate(${targetX * 8}, ${currentY})`);
+
+                if (currentY >= targetY) {
+                    clearInterval(dropInterval);
+                    
+                    setTimeout(() => {
+                        const retractInterval = setInterval(() => {
+                            currentY -= 20;
+                            hookLine.setAttribute('y2', Math.max(70, currentY));
+                            hookGroup.setAttribute('transform', `translate(${targetX * 8}, ${Math.max(70, currentY)})`);
+
+                            if (currentY <= 70) {
+                                clearInterval(retractInterval);
+                                isHooking = false;
+                                boat.style.transform = `translateX(0px)`;
+                                if (randomFish) {
+                                    catchJobFish(randomFish.job);
+                                }
+                            }
+                        }, 20);
+                    }, 200);
+                }
+            }, 20);
+        }
+
+        function catchJobFish(job) {
+            playSound('catch');
+            triggerConfetti();
+
+            caughtJobs.add(job.id);
+            updateCaughtBadge();
+
+            currentModalJob = job;
+
+            document.getElementById('modalJobBadge').innerHTML = `
+                <span class="text-6xl md:text-7xl">${job.icon}</span>
+            `;
+            document.getElementById('modalJobBadge').style.backgroundColor = job.bgLight;
+            document.getElementById('modalJobCategory').innerText = `${job.category} (레벨 ${job.level})`;
+            document.getElementById('modalJobName').innerText = job.name;
+            document.getElementById('modalJobDesc').innerText = job.desc;
+            document.getElementById('modalJobTools').innerText = job.tools;
+            document.getElementById('modalJobPlace').innerText = job.place;
+
+            const modal = document.getElementById('catchModal');
+            modal.classList.remove('hidden');
+
+            speakText(job.speech);
+            renderAlbum();
+        }
+
+        function speakCurrentModalJob() {
+            if (currentModalJob) {
+                speakText(currentModalJob.speech);
+            }
+        }
+
+        function closeCatchModal() {
+            const modal = document.getElementById('catchModal');
+            modal.classList.add('hidden');
+        }
+
+        function updateCaughtBadge() {
+            document.getElementById('caughtCountBadge').innerText = caughtJobs.size;
+        }
+
+        function setupQuiz() {
+            // Select quiz question from available unlocked levels (or review)
+            const availableJobs = JOBS_DATA.filter(job => job.level <= currentLevel);
+            const randomIndex = Math.floor(Math.random() * availableJobs.length);
+            currentQuizJob = availableJobs[randomIndex];
+
+            document.getElementById('quizQuestionText').innerText = `"${currentQuizJob.desc}"`;
+            document.getElementById('quizHintTools').innerText = currentQuizJob.tools;
+
+            let options = [currentQuizJob];
+            while (options.length < 3) {
+                const rand = JOBS_DATA[Math.floor(Math.random() * JOBS_DATA.length)];
+                if (!options.some(opt => opt.id === rand.id)) {
+                    options.push(rand);
+                }
+            }
+
+            options.sort(() => Math.random() - 0.5);
+
+            const grid = document.getElementById('quizOptionsGrid');
+            grid.innerHTML = '';
+
+            options.forEach(job => {
+                const btn = document.createElement('button');
+                btn.className = 'bg-white hover:bg-purple-50 border-4 border-purple-200 hover:border-purple-500 rounded-3xl p-4 flex flex-col items-center gap-2 shadow-md big-btn transition-all';
+                btn.innerHTML = `
+                    <div class="flex items-center justify-center my-1 text-5xl md:text-6xl">
+                        <span>${job.icon}</span>
+                    </div>
+                    <span class="text-xl md:text-2xl font-black text-slate-950">${job.name}</span>
+                    <span class="text-xs bg-purple-100 text-purple-900 font-extrabold px-3 py-1 rounded-full border border-purple-300">${job.category}</span>
+                `;
+
+                btn.onclick = () => checkQuizAnswer(job, btn);
+                grid.appendChild(btn);
+            });
+
+            speakQuizQuestion();
+        }
+
+        function speakQuizQuestion() {
+            if (currentQuizJob) {
+                speakText(`다음 직업은 무엇일까요? ${currentQuizJob.desc}`);
+            }
+        }
+
+        function checkQuizAnswer(selectedJob, element) {
+            if (selectedJob.id === currentQuizJob.id) {
+                playSound('correct');
+                triggerConfetti();
+
+                element.classList.remove('border-purple-200');
+                element.classList.add('border-green-500', 'bg-green-50');
+
+                // Increase level experience
+                levelExp++;
+
+                if (levelExp >= expNeededPerLevel && currentLevel < maxLevel) {
+                    levelExp = 0;
+                    currentLevel++;
+                    selectedFishingLevel = currentLevel; // Switch fishing level to newly unlocked level!
+                    
+                    updateLevelUI();
+
+                    setTimeout(() => {
+                        triggerLevelUpModal();
+                    }, 800);
+                } else {
+                    updateLevelUI();
+                    speakText(`정답입니다! ${selectedJob.name}이 맞아요! ${selectedJob.speech}`);
+
+                    setTimeout(() => {
+                        catchJobFish(selectedJob);
+                        setupQuiz();
+                    }, 1200);
+                }
+            } else {
+                playSound('wrong');
+                element.classList.add('border-red-400', 'bg-red-50');
+                speakText(`아쉬워요! 다시 한 번 생각해보세요.`);
+            }
+        }
+
+        function triggerLevelUpModal() {
+            playSound('levelup');
+            triggerConfetti();
+
+            const levelTitle = document.getElementById('levelUpTitle');
+            const unlockedContainer = document.getElementById('levelUpUnlockedJobs');
+
+            levelTitle.innerText = `레벨 ${currentLevel} 달성!`;
+            unlockedContainer.innerHTML = '';
+
+            const newlyUnlocked = JOBS_DATA.filter(job => job.level === currentLevel);
+            newlyUnlocked.forEach(job => {
+                const badge = document.createElement('div');
+                badge.className = 'bg-amber-100 text-amber-950 border border-amber-300 px-3 py-1.5 rounded-2xl flex items-center gap-2 font-black text-sm shadow-sm';
+                badge.innerHTML = `<span>${job.icon}</span> <span>${job.name}</span>`;
+                unlockedContainer.appendChild(badge);
+            });
+
+            document.getElementById('levelUpModal').classList.remove('hidden');
+
+            speakText(`축하합니다! 레벨 ${currentLevel}로 올라갔습니다! 새로운 직업 물고기들이 낚시터에 나타났어요!`);
+            
+            // Refresh fishing sea
+            document.getElementById('fishingLevelLabel').innerText = LEVEL_NAMES[currentLevel];
+            createSwimmingFish();
+        }
+
+        function closeLevelUpModal() {
+            document.getElementById('levelUpModal').classList.add('hidden');
+            switchTab('fishing');
+        }
+
+        function renderAlbum() {
+            const albumGrid = document.getElementById('albumGrid');
+            if (!albumGrid) return;
+            
+            albumGrid.innerHTML = '';
+
+            JOBS_DATA.forEach(job => {
+                const isCaught = caughtJobs.has(job.id);
+                const isUnlockedLvl = job.level <= currentLevel;
+                const card = document.createElement('div');
+
+                card.className = `fish-card rounded-3xl p-4 flex flex-col items-center text-center cursor-pointer border-4 ${
+                    isCaught ? 'bg-white border-teal-400 shadow-md' : 'bg-gray-100 border-gray-300 opacity-60'
+                }`;
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-center text-5xl md:text-6xl mb-2 ${isCaught ? '' : 'grayscale opacity-50'}">
+                        <span>${isCaught ? job.icon : '❓'}</span>
+                    </div>
+                    <h3 class="text-xl font-black ${isCaught ? 'text-slate-950' : 'text-gray-500'}">
+                        ${isCaught ? job.name : '미수집 직업'}
+                    </h3>
+                    <span class="text-xs font-black mt-1 px-2.5 py-0.5 rounded-full ${
+                        isCaught ? 'bg-teal-100 text-teal-900 border border-teal-300' : 'bg-gray-200 text-gray-600'
+                    }">
+                        ${isCaught ? `${job.category}` : `레벨 ${job.level} 해금`}
+                    </span>
+                    ${isCaught ? `<button class="mt-2 text-xs bg-teal-500 hover:bg-teal-600 text-white font-extrabold py-1 px-3 rounded-full shadow">🔊 들으러 가기</button>` : ''}
+                `;
+
+                card.onclick = () => {
+                    if (isCaught) {
+                        playSound('catch');
+                        speakText(job.speech);
+                    } else if (isUnlockedLvl) {
+                        speakText(`레벨 ${job.level} 직업 물고기예요. 자유 낚시터에서 낚아보세요!`);
+                    } else {
+                        speakText(`아직 잠겨있는 직업이에요. 퀴즈를 풀어 레벨 ${job.level}을 달성해 보세요!`);
+                    }
+                };
+
+                albumGrid.appendChild(card);
+            });
+        }
+
+        function switchTab(tabName) {
+            document.getElementById('section-fishing').classList.add('hidden');
+            document.getElementById('section-quiz').classList.add('hidden');
+            document.getElementById('section-album').classList.add('hidden');
+
+            const tabs = ['fishing', 'quiz', 'album'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                btn.className = 'tab-btn bg-white hover:bg-sky-100 text-sky-900 font-bold py-3 px-4 md:px-6 rounded-2xl text-base md:text-xl shadow border-2 border-sky-400 flex items-center gap-2 flex-1 justify-center max-w-[200px]';
+            });
+
+            const activeSection = document.getElementById(`section-${tabName}`);
+            activeSection.classList.remove('hidden');
+            activeSection.classList.add('flex');
+
+            const activeTabBtn = document.getElementById(`tab-${tabName}`);
+            activeTabBtn.className = 'tab-btn active-tab bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-4 md:px-6 rounded-2xl text-base md:text-xl shadow-md border-2 border-sky-800 flex items-center gap-2 flex-1 justify-center max-w-[200px]';
+
+            if (tabName === 'quiz') {
+                setupQuiz();
+            } else if (tabName === 'album') {
+                renderAlbum();
+            } else if (tabName === 'fishing') {
+                speakInstruction('자유 낚시터입니다. 마음껏 물고기를 잡으며 여러 직업을 구경해보세요!');
+            }
+        }
+
+        function triggerConfetti() {
+            const canvas = document.getElementById('confettiCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const particles = [];
+            const colors = ['#ff7675', '#74b9ff', '#55efc4', '#fdcb6e', '#a29bfe', '#fd79a8'];
+
+            for (let i = 0; i < 60; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    vx: (Math.random() - 0.5) * 12,
+                    vy: (Math.random() - 0.8) * 12,
+                    size: Math.random() * 8 + 6,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    rotation: Math.random() * 360,
+                    rotSpeed: (Math.random() - 0.5) * 10
+                });
+            }
+
+            let duration = 40;
+            function render() {
+                if (duration <= 0) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    return;
+                }
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.3;
+                    p.rotation += p.rotSpeed;
+
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate((p.rotation * Math.PI) / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                    ctx.restore();
+                });
+
+                duration--;
+                requestAnimationFrame(render);
+            }
+            render();
+        }
+
+        // Initialize Application
+        window.onload = function() {
+            updateLevelUI();
+            createSwimmingFish();
+            animateSea();
+            renderAlbum();
+
+            setTimeout(() => {
+                speakText('꿈을 낚는 직업 낚시 놀이에 오신 것을 환영합니다! 퀴즈를 맞히고 레벨을 올려 새로운 직업 물고기를 해금해보세요!');
+            }, 500);
+        };
+    </script>
+</body>
+</html>
